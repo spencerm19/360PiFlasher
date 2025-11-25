@@ -1,0 +1,60 @@
+📝 Project Description: 360PiFlasher (Falcon NAND Flasher)
+
+1. Project Overview and Goal
+
+The 360PiFlasher project aims to create a fully functional NAND reader/writer for the Xbox 360 Falcon motherboard by adapting existing open-source code to a more powerful, yet more complex, platform: the Raspberry Pi 4 Model B+.
+
+Overall Goal: To successfully port the firmware logic of the highly efficient PicoFlasher (originally designed for the Raspberry Pi Pico) onto a Raspberry Pi 4 B+ running Linux, allowing the Pi 4 to interface with the Falcon's NAND through the GPIO pins and communicate with the J-Runner host software for reading and writing console data (critical for Reset Glitch Hack modifications).
+
+The Core Technical Challenge: Real-Time Timing
+
+The key obstacle is the vast difference in operating environments:
+
+PicoFlasher: Runs on the RP2040 microcontroller, which provides Programmed I/O (PIO) and dedicated real-time control, ensuring precise, high-speed, and uninterrupted timing.
+
+Pi 4 B+: Runs a Linux OS, which is multitasking. This introduces OS Jitter (unpredictable delays) when trying to execute high-speed, low-level I/O via GPIO. These delays can easily corrupt the highly time-sensitive SPI communication required by the Falcon NAND.
+
+To overcome this, the port must use low-level C/C++ and access the BCM2711 hardware directly (via libraries like $\text{pigpio}$) to bypass the slow Linux kernel scheduling whenever possible.
+
+2. Hardware and Timing Specifications
+
+A. Clock Speeds and Timing Constraints
+
+|
+
+| Component | Microcontroller / SoC | Clock Speed | Key Timing Constraint |
+| Pico Flasher (Source) | RP2040 | 133 MHz (Dual-Core, dedicated PIO) | Achieves reliable, precise, high-speed SPI signaling. |
+| Pi 4 B+ (Target) | BCM2711 | 1.5 GHz (Quad-Core) | OS Jitter must be mitigated; relies on hardware peripherals (DMA/SPI) for timing. |
+| Falcon NAND | Typically a 16MB SPI-like Flash chip. | N/A (Device Clock) | Access Time ($\text{t}_{AC}$): Must be accessed within tight nanosecond windows to prevent data corruption. |
+
+B. Falcon Motherboard NAND Interface (SPI Signals)
+
+The project requires driving or reading these signals directly on the Falcon motherboard's solder points:
+
+| Signal Name | Purpose |
+| SPI_MOSI | Master Out, Slave In (Data to NAND) |
+| SPI_MISO | Master In, Slave Out (Data from NAND) |
+| SPI_CLK | Serial Clock (Timing synchronization) |
+| SPI_SS_N | Slave Select / Chip Enable (Active low) |
+| SMC_RST_XDK_N | System Management Controller Reset |
+| SMC_DBG_EN | System Management Controller Debug Enable |
+
+3. Comprehensive Documentation and Reference Links
+
+This list contains all the necessary documentation for your development team to successfully execute the port and understand the underlying hardware requirements.
+
+A. Hardware Datasheets and Technical Documentation
+
+| Resource | Description | Link |
+| BCM2711 Peripheral Datasheet | Low-level register map and documentation for the Raspberry Pi 4's SoC, essential for direct GPIO/SPI access. | BCM2711 ARM Peripherals (PDF) |
+| Falcon Motherboard RGH Guide | Visual reference for the physical solder points on the Falcon motherboard for RGH 3.0. | https://xbox360hub.com/guides/rgh-3-guide/ |
+| ATmega2560 Pinout/Specs | (Context) Documentation for the previously considered Arduino Mega 2560, useful for understanding microcontroller constraints. | Elegoo Mega 2560 R3 Pinout (PDF) |
+
+B. Software and Code Documentation
+
+| Resource | Description | Link |
+| PicoFlasher Source Code (Reference) | The definitive C/C++ codebase defining the NAND command sequences and I/O logic that must be ported. | https://github.com/X360Tools/PicoFlasher |
+| pigpio Library Documentation | The primary library for achieving high-speed, hardware-timed GPIO control on the Pi running Linux. | http://abyz.me.uk/rpi/pigpio/ |
+| Real-Time Linux Kernel Guide | Documentation on patching the Linux kernel to minimize the timing jitter that threatens data integrity. | Real Time Linux Kernel on Raspberry Pi (Google Search) |
+
+C. Visual Reference

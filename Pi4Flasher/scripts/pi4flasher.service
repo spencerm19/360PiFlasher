@@ -1,0 +1,24 @@
+[Unit]
+Description=Pi4Flasher Xbox 360 NAND Flasher Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/pi4flasher /dev/ttyAMA0
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+PrivateTmp=yes
+NoNewPrivileges=false
+
+# Real-time scheduling for better timing
+CPUSchedulingPolicy=fifo
+CPUSchedulingPriority=99
+
+[Install]
+WantedBy=multi-user.target
+
